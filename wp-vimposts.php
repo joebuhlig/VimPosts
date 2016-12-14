@@ -74,18 +74,18 @@ function create_group_taxonomies() {
 }
 
 /* Meta box setup function. */
-function working_with_omnifocus_meta_boxes_setup() {
+function wp_vimposts_meta_boxes_setup() {
 
   /* Add meta boxes on the 'add_meta_boxes' hook. */
-  add_action( 'add_meta_boxes', 'working_with_omnifocus_add_post_meta_boxes' );
+  add_action( 'add_meta_boxes', 'wp_vimposts_add_post_meta_boxes' );
 }
 
-function working_with_omnifocus_add_post_meta_boxes() {
+function wp_vimposts_add_post_meta_boxes() {
 
   add_meta_box(
-    'working-with-omnifocus',      // Unique ID
+    'wp-vimposts',      // Unique ID
     esc_html__( 'WP VimPosts Settings', 'example' ),    // Title
-    'working_with_omnifocus_meta_box',   // Callback function
+    'wp_vimposts_meta_box',   // Callback function
     'video',         // Admin page (or post type)
     'normal',         // Context
     'high'         // Priority
@@ -93,9 +93,9 @@ function working_with_omnifocus_add_post_meta_boxes() {
 }
 
 /* Display the post meta box. */
-function working_with_omnifocus_meta_box( $object, $box ) { ?>
+function wp_vimposts_meta_box( $object, $box ) { ?>
 
-  <?php wp_nonce_field( basename( __FILE__ ), 'working_with_omnifocus_nonce' ); ?>
+  <?php wp_nonce_field( basename( __FILE__ ), 'wp_vimposts_nonce' ); ?>
 
   <p>
     <label for="vimeo-link"><?php _e( "Vimeo ID", 'example' ); ?></label>
@@ -109,11 +109,11 @@ function working_with_omnifocus_meta_box( $object, $box ) { ?>
 <?php }
 
 /* Save the meta box's post metadata. */
-function working_with_omnifocus_save_post_class_meta( $post_id, $post ) {
+function wp_vimposts_save_post_class_meta( $post_id, $post ) {
   global $post;
   
   /* Verify the nonce before proceeding. */
-  if ( !isset( $_POST['working_with_omnifocus_nonce'] ) || !wp_verify_nonce( $_POST['working_with_omnifocus_nonce'], basename( __FILE__ ) ) )
+  if ( !isset( $_POST['wp_vimposts_nonce'] ) || !wp_verify_nonce( $_POST['wp_vimposts_nonce'], basename( __FILE__ ) ) )
     return $post_id;
 
   /* Get the post type object. */
@@ -129,12 +129,12 @@ function working_with_omnifocus_save_post_class_meta( $post_id, $post ) {
   $new_video_sort_value = ( isset( $_POST['video-sort'] ) ? $_POST['video-sort'] : '' );
 
 
-  update_working_with_omnifocus_meta($post->ID, 'vimeo_link', $new_vimeo_link_value);
-  update_working_with_omnifocus_meta($post->ID, 'video_duration', $new_video_duration_value);
-  update_working_with_omnifocus_meta($post->ID, 'video_sort', $new_video_sort_value);
+  update_wp_vimposts_meta($post->ID, 'vimeo_link', $new_vimeo_link_value);
+  update_wp_vimposts_meta($post->ID, 'video_duration', $new_video_duration_value);
+  update_wp_vimposts_meta($post->ID, 'video_sort', $new_video_sort_value);
 }
 
-function update_working_with_omnifocus_meta($post_id, $meta_key, $new_meta_value){
+function update_wp_vimposts_meta($post_id, $meta_key, $new_meta_value){
   /* Get the meta value of the custom field key. */
   $meta_value = get_post_meta( $post_id, $meta_key, true );
 
@@ -266,23 +266,12 @@ add_action( 'wp_enqueue_scripts', 'my_assets' );
 add_filter( 'single_template', 'get_custom_post_type_template' );
 add_action( 'init', 'create_video_posttype' );
 add_action( 'init', 'create_group_taxonomies', 0 );
-add_action( 'load-post.php', 'working_with_omnifocus_meta_boxes_setup' );
-add_action( 'load-post-new.php', 'working_with_omnifocus_meta_boxes_setup' );
-add_action('save_post', 'working_with_omnifocus_save_post_class_meta');
+add_action( 'load-post.php', 'wp_vimposts_meta_boxes_setup' );
+add_action( 'load-post-new.php', 'wp_vimposts_meta_boxes_setup' );
+add_action('save_post', 'wp_vimposts_save_post_class_meta');
 
 add_action( 'wp_ajax_update_user_field', 'update_user_field' );
 
 add_shortcode( 'video_list', 'video_list_func' );
-
-//use my checkout template
-function my_pmpro_pages_shortcode_checkout($content)
-{
-	ob_start();
-	include(plugin_dir_path(__FILE__) . "templates/checkout.php");
-	$temp_content = ob_get_contents();
-	ob_end_clean();
-	return $temp_content;
-}
-add_filter("pmpro_pages_shortcode_checkout", "my_pmpro_pages_shortcode_checkout");
 
 ?>

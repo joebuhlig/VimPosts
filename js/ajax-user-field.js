@@ -49,7 +49,7 @@
 				}
 			},
 			error: function( result ) {
-				alert( result );
+				console.log( result );
 			}
 		})
 	}
