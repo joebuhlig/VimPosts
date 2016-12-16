@@ -36,27 +36,27 @@ function create_vimpost_taxonomies() {
 		'rewrite'           => array( 'slug' => 'groups' )
 	);
 
-	register_taxonomy( 'groups', array( 'video' ), $args );
+	register_taxonomy( 'groups', array( 'vimpost' ), $args );
 }
  
  function create_vimpost_posttype() {
 // set up labels
 	$labels = array(
- 		'name' => 'Videos',
-    	'singular_name' => 'Video',
-    	'add_new' => 'Add New Video',
-    	'add_new_item' => 'Add New Video',
-    	'edit_item' => 'Edit Video',
-    	'new_item' => 'New Video',
-    	'all_items' => 'All Videos',
-    	'view_item' => 'View Video',
-    	'search_items' => 'Search Videos',
-    	'not_found' =>  'No Videos Found',
-    	'not_found_in_trash' => 'No Videos found in Trash', 
+ 		'name' => 'VimPosts',
+    	'singular_name' => 'VimPost',
+    	'add_new' => 'Add New VimPost',
+    	'add_new_item' => 'Add New VimPost',
+    	'edit_item' => 'Edit VimPost',
+    	'new_item' => 'New VimPost',
+    	'all_items' => 'All VimPosts',
+    	'view_item' => 'View VimPost',
+    	'search_items' => 'Search VimPosts',
+    	'not_found' =>  'No VimPosts Found',
+    	'not_found_in_trash' => 'No VimPosts found in Trash', 
     	'parent_item_colon' => '',
-    	'menu_name' => 'Videos',
+    	'menu_name' => 'VimPosts',
     	);
-  register_post_type( 'video',
+  register_post_type( 'vimpost',
     array(
 	'labels' => $labels,
 	'has_archive' => true,
@@ -67,7 +67,7 @@ function create_vimpost_taxonomies() {
 	'taxonomies' => array( 'post_tag', 'groups' ),	
 	'exclude_from_search' => false,
 	'capability_type' => 'post',
-	'rewrite' => array( 'slug' => '%group%' ),
+	'rewrite' => array( 'slug' => '%groups%' ),
 	'menu_icon' => 'dashicons-format-video',
     )
   );
@@ -86,7 +86,7 @@ function vimposts_add_post_meta_boxes() {
     'wp-vimposts',      // Unique ID
     esc_html__( 'WP VimPosts Settings', 'example' ),    // Title
     'vimposts_meta_box',   // Callback function
-    'video',         // Admin page (or post type)
+    'vimpost',         // Admin page (or post type)
     'normal',         // Context
     'high'         // Priority
   );
@@ -151,14 +151,6 @@ function update_vimposts_meta($post_id, $meta_key, $new_meta_value){
     delete_post_meta( $post_id, $meta_key, $meta_value );
 }
 
-
-function vimposts_content_filter( $content ) {
-    $custom_content = 'YOUR CONTENT GOES HERE';
-    $custom_content .= $content;
-    return $custom_content;
-}
-add_filter( 'the_content', 'vimposts_content_filter' );
-
 function get_custom_post_type_template($single_template) {
      global $post;
 
@@ -168,7 +160,19 @@ function get_custom_post_type_template($single_template) {
      return $single_template;
 }
 
-function video_list_func ( $atts ){
+function vimpost_main_shortcode_func($atts){
+	global $post;
+	$id = $post->ID;
+	$output = '';
+	if ((get_post_meta( $id, "vimeo_link", true )) || (get_post_meta( $id, "vimeo_link", true ))){
+		$output .= '<div class="embed-container">';
+		$output .= '<iframe id="vimeoplayer" src="//player.vimeo.com/video/' . get_post_meta( $id, "vimeo_link", true ) . '" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>';
+		$output .= '</div>';
+	}
+	return $output;
+}
+
+function vimpost_list_func ( $atts ){
 	$video_list_atts = shortcode_atts( array(
 		'group' => ''
 	), $atts );
@@ -268,6 +272,19 @@ function update_user_field(){
 	die();
 }
 
+function vimposts_custom_links($post_link, $post){
+    if ( is_object( $post ) ){
+        $terms = wp_get_object_terms( $post->ID, 'groups' );
+        if( $terms ){
+            return str_replace( '%groups%' , $terms[0]->slug , $post_link );
+        }
+        else{
+        	return str_replace( '%groups%' , "videos" , $post_link );
+        }
+    }
+    return $post_link; 
+}
+
 add_action( 'wp_enqueue_scripts', 'vimposts_assets' );
 
 add_filter( 'single_template', 'get_custom_post_type_template' );
@@ -278,7 +295,8 @@ add_action( 'load-post-new.php', 'vimposts_meta_boxes_setup' );
 add_action('save_post', 'vimposts_save_post_class_meta');
 
 add_action( 'wp_ajax_update_user_field', 'update_user_field' );
-
-add_shortcode( 'video_list', 'video_list_func' );
+add_filter( 'post_type_link', 'vimposts_custom_links', 1, 3 );
+add_shortcode( 'vimpost', 'vimpost_main_shortcode_func' );
+add_shortcode( 'vimpost_list', 'vimpost_list_func' );
 
 ?>
