@@ -1,16 +1,16 @@
 <?php
 /**
-Plugin Name: WP VimPosts
-Plugin URI: https://github.com/joebuhlig/wp-vimposts
+Plugin Name: VimPosts
+Plugin URI: https://github.com/joebuhlig/vimposts
 Description: This plugin adds some custom abilities for posting Vimeo videos.
 Version: 1.0.0
 Author: Joe Buhlig
 Author URI: http://joebuhlig.com
-GitHub Plugin URI: https://github.com/joebuhlig/wp-vimposts
+GitHub Plugin URI: https://github.com/joebuhlig/vimposts
 License: GPL2
  */
  
-function create_group_taxonomies() {
+function create_vimpost_taxonomies() {
 	// Add new taxonomy, make it hierarchical (like categories)
 	$labels = array(
 		'name'              => _x( 'Groups', 'taxonomy general name' ),
@@ -39,7 +39,7 @@ function create_group_taxonomies() {
 	register_taxonomy( 'groups', array( 'video' ), $args );
 }
  
- function create_video_posttype() {
+ function create_vimpost_posttype() {
 // set up labels
 	$labels = array(
  		'name' => 'Videos',
@@ -67,25 +67,25 @@ function create_group_taxonomies() {
 	'taxonomies' => array( 'post_tag', 'groups' ),	
 	'exclude_from_search' => false,
 	'capability_type' => 'post',
-	'rewrite' => array( 'slug' => 'videos' ),
-    	'menu_icon' => 'dashicons-format-video',
+	'rewrite' => array( 'slug' => '%group%' ),
+	'menu_icon' => 'dashicons-format-video',
     )
   );
 }
 
 /* Meta box setup function. */
-function wp_vimposts_meta_boxes_setup() {
+function vimposts_meta_boxes_setup() {
 
   /* Add meta boxes on the 'add_meta_boxes' hook. */
-  add_action( 'add_meta_boxes', 'wp_vimposts_add_post_meta_boxes' );
+  add_action( 'add_meta_boxes', 'vimposts_add_post_meta_boxes' );
 }
 
-function wp_vimposts_add_post_meta_boxes() {
+function vimposts_add_post_meta_boxes() {
 
   add_meta_box(
     'wp-vimposts',      // Unique ID
     esc_html__( 'WP VimPosts Settings', 'example' ),    // Title
-    'wp_vimposts_meta_box',   // Callback function
+    'vimposts_meta_box',   // Callback function
     'video',         // Admin page (or post type)
     'normal',         // Context
     'high'         // Priority
@@ -93,9 +93,9 @@ function wp_vimposts_add_post_meta_boxes() {
 }
 
 /* Display the post meta box. */
-function wp_vimposts_meta_box( $object, $box ) { ?>
+function vimposts_meta_box( $object, $box ) { ?>
 
-  <?php wp_nonce_field( basename( __FILE__ ), 'wp_vimposts_nonce' ); ?>
+  <?php wp_nonce_field( basename( __FILE__ ), 'vimposts_nonce' ); ?>
 
   <p>
     <label for="vimeo-link"><?php _e( "Vimeo ID", 'example' ); ?></label>
@@ -109,11 +109,11 @@ function wp_vimposts_meta_box( $object, $box ) { ?>
 <?php }
 
 /* Save the meta box's post metadata. */
-function wp_vimposts_save_post_class_meta( $post_id, $post ) {
+function vimposts_save_post_class_meta( $post_id ) {
   global $post;
   
   /* Verify the nonce before proceeding. */
-  if ( !isset( $_POST['wp_vimposts_nonce'] ) || !wp_verify_nonce( $_POST['wp_vimposts_nonce'], basename( __FILE__ ) ) )
+  if ( !isset( $_POST['vimposts_nonce'] ) || !wp_verify_nonce( $_POST['vimposts_nonce'], basename( __FILE__ ) ) )
     return $post_id;
 
   /* Get the post type object. */
@@ -129,12 +129,12 @@ function wp_vimposts_save_post_class_meta( $post_id, $post ) {
   $new_video_sort_value = ( isset( $_POST['video-sort'] ) ? $_POST['video-sort'] : '' );
 
 
-  update_wp_vimposts_meta($post->ID, 'vimeo_link', $new_vimeo_link_value);
-  update_wp_vimposts_meta($post->ID, 'video_duration', $new_video_duration_value);
-  update_wp_vimposts_meta($post->ID, 'video_sort', $new_video_sort_value);
+  update_vimposts_meta($post->ID, 'vimeo_link', $new_vimeo_link_value);
+  update_vimposts_meta($post->ID, 'video_duration', $new_video_duration_value);
+  update_vimposts_meta($post->ID, 'video_sort', $new_video_sort_value);
 }
 
-function update_wp_vimposts_meta($post_id, $meta_key, $new_meta_value){
+function update_vimposts_meta($post_id, $meta_key, $new_meta_value){
   /* Get the meta value of the custom field key. */
   $meta_value = get_post_meta( $post_id, $meta_key, true );
 
@@ -150,6 +150,14 @@ function update_wp_vimposts_meta($post_id, $meta_key, $new_meta_value){
   elseif ( '' == $new_meta_value && $meta_value )
     delete_post_meta( $post_id, $meta_key, $meta_value );
 }
+
+
+function vimposts_content_filter( $content ) {
+    $custom_content = 'YOUR CONTENT GOES HERE';
+    $custom_content .= $content;
+    return $custom_content;
+}
+add_filter( 'the_content', 'vimposts_content_filter' );
 
 function get_custom_post_type_template($single_template) {
      global $post;
@@ -238,8 +246,8 @@ function video_list_func ( $atts ){
 }
 
 
-function my_assets() {
-        global $post;
+function vimposts_assets() {
+    global $post;
 	$watched = get_user_meta(get_current_user_id(), "video_watched_" . $post->ID, true);
 	wp_enqueue_script( 'vimeo-player', plugins_url('/js/player.js', __FILE__), array( 'jquery' ) );
 	wp_enqueue_script( 'ajax-user-field', plugins_url('/js/ajax-user-field.js', __FILE__), array( 'jquery' ) );
@@ -252,7 +260,6 @@ function my_assets() {
 	
 }
 
-
 function update_user_field(){
 	$custom_field = "video_watched_" . $_POST['postID'];
 	$user_id = get_current_user_id();
@@ -261,14 +268,14 @@ function update_user_field(){
 	die();
 }
 
-add_action( 'wp_enqueue_scripts', 'my_assets' );
+add_action( 'wp_enqueue_scripts', 'vimposts_assets' );
 
 add_filter( 'single_template', 'get_custom_post_type_template' );
-add_action( 'init', 'create_video_posttype' );
-add_action( 'init', 'create_group_taxonomies', 0 );
-add_action( 'load-post.php', 'wp_vimposts_meta_boxes_setup' );
-add_action( 'load-post-new.php', 'wp_vimposts_meta_boxes_setup' );
-add_action('save_post', 'wp_vimposts_save_post_class_meta');
+add_action( 'init', 'create_vimpost_posttype' );
+add_action( 'init', 'create_vimpost_taxonomies', 0 );
+add_action( 'load-post.php', 'vimposts_meta_boxes_setup' );
+add_action( 'load-post-new.php', 'vimposts_meta_boxes_setup' );
+add_action('save_post', 'vimposts_save_post_class_meta');
 
 add_action( 'wp_ajax_update_user_field', 'update_user_field' );
 

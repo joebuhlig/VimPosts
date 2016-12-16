@@ -40,7 +40,7 @@ get_header(); ?>
 						}
 						the_title( '<h3 class="entry-title inline-block pl15">', '</h3>' ); ?>
 					</header><!-- .entry-header -->
-					<?php if ((pmpro_hasMembershipLevel() && get_post_meta( get_the_ID(), "vimeo_link", true )) || (!pmpro_hasMembershipLevel() && pmpro_has_membership_access() && get_post_meta( get_the_ID(), "vimeo_link", true ))){ ?>
+					<?php if ((get_post_meta( get_the_ID(), "vimeo_link", true )) || (get_post_meta( get_the_ID(), "vimeo_link", true ))){ ?>
 					<div class="embed-container"><iframe id="vimeoplayer" src="//player.vimeo.com/video/<?php echo get_post_meta( get_the_ID(), "vimeo_link", true ); ?>" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 					</div>
 					<?php } ?>
@@ -60,7 +60,6 @@ get_header(); ?>
 				
 				</article><!-- #post-## -->
 				
-				<?php gateway_post_nav(); ?>
 
 				<hr>
 
