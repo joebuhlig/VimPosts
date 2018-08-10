@@ -1,5 +1,5 @@
 <?php
-/**
+/*
 Plugin Name: VimPosts
 Plugin URI: https://github.com/joebuhlig/vimposts
 Description: This plugin adds some custom abilities for posting Vimeo videos.
@@ -9,7 +9,141 @@ Author URI: http://joebuhlig.com
 GitHub Plugin URI: https://github.com/joebuhlig/vimposts
 License: GPL2
  */
- 
+
+ // This is the secret key for API authentication. You configured it in the settings menu of the license manager plugin.
+ define('YOUR_SPECIAL_SECRET_KEY', '5b6de157e40746.44165099'); //Rename this constant name so it is specific to your plugin or theme.
+
+ // This is the URL where API query request will be sent to. This should be the URL of the site where you have installed the main license manager plugin. Get this value from the integration help page.
+ define('YOUR_LICENSE_SERVER_URL', 'http://localhost:8888/wordpress_dev1'); //Rename this constant name so it is specific to your plugin or theme.
+
+ // This is a value that will be recorded in the license manager data so you can identify licenses for this item/product.
+ define('YOUR_ITEM_REFERENCE', 'VimPosts'); //Rename this constant name so it is specific to your plugin or theme.
+
+ add_action('admin_menu', 'vimposts_license_menu');
+
+ function vimposts_license_menu() {
+     add_options_page('VimPosts License Activation Menu', 'VimPosts License', 'manage_options', __FILE__, 'vimposts_license_management_page');
+ }
+
+ function vimposts_license_management_page() {
+     echo '<div class="wrap">';
+     echo '<h2>VimPosts License Management</h2>';
+
+     /*** License activate button was clicked ***/
+     if (isset($_REQUEST['activate_license'])) {
+         $license_key = $_REQUEST['vimposts_license_key'];
+
+         // API query parameters
+         $api_params = array(
+             'slm_action' => 'slm_activate',
+             'secret_key' => YOUR_SPECIAL_SECRET_KEY,
+             'license_key' => $license_key,
+             'registered_domain' => $_SERVER['SERVER_NAME'],
+             'item_reference' => urlencode(YOUR_ITEM_REFERENCE),
+         );
+
+         // Send query to the license manager server
+         $query = esc_url_raw(add_query_arg($api_params, YOUR_LICENSE_SERVER_URL));
+         $response = wp_remote_get($query, array('timeout' => 20, 'sslverify' => false));
+
+         // Check for error in the response
+         if (is_wp_error($response)){
+             echo "Unexpected Error! The query returned with an error.";
+         }
+
+         //var_dump($response);//uncomment it if you want to look at the full response
+
+         // License data.
+         $license_data = json_decode(wp_remote_retrieve_body($response));
+
+         // TODO - Do something with it.
+         //var_dump($license_data);//uncomment it to look at the data
+
+         if($license_data->result == 'success'){//Success was returned for the license activation
+
+             //Uncomment the followng line to see the message that returned from the license server
+             echo '<br />The following message was returned from the server: '.$license_data->message;
+
+             //Save the license key in the options table
+             update_option('vimposts_license_key', $license_key);
+         }
+         else{
+             //Show error to the user. Probably entered incorrect license key.
+
+             //Uncomment the followng line to see the message that returned from the license server
+             echo '<br />The following message was returned from the server: '.$license_data->message;
+         }
+
+     }
+     /*** End of license activation ***/
+
+     /*** License activate button was clicked ***/
+     if (isset($_REQUEST['deactivate_license'])) {
+         $license_key = $_REQUEST['vimposts_license_key'];
+
+         // API query parameters
+         $api_params = array(
+             'slm_action' => 'slm_deactivate',
+             'secret_key' => YOUR_SPECIAL_SECRET_KEY,
+             'license_key' => $license_key,
+             'registered_domain' => $_SERVER['SERVER_NAME'],
+             'item_reference' => urlencode(YOUR_ITEM_REFERENCE),
+         );
+
+         // Send query to the license manager server
+         $query = esc_url_raw(add_query_arg($api_params, YOUR_LICENSE_SERVER_URL));
+         $response = wp_remote_get($query, array('timeout' => 20, 'sslverify' => false));
+
+         // Check for error in the response
+         if (is_wp_error($response)){
+             echo "Unexpected Error! The query returned with an error.";
+         }
+
+         //var_dump($response);//uncomment it if you want to look at the full response
+
+         // License data.
+         $license_data = json_decode(wp_remote_retrieve_body($response));
+
+         // TODO - Do something with it.
+         //var_dump($license_data);//uncomment it to look at the data
+
+         if($license_data->result == 'success'){//Success was returned for the license activation
+
+             //Uncomment the followng line to see the message that returned from the license server
+             echo '<br />The following message was returned from the server: '.$license_data->message;
+
+             //Remove the licensse key from the options table. It will need to be activated again.
+             update_option('vimposts_license_key', '');
+         }
+         else{
+             //Show error to the user. Probably entered incorrect license key.
+
+             //Uncomment the followng line to see the message that returned from the license server
+             echo '<br />The following message was returned from the server: '.$license_data->message;
+         }
+
+     }
+     /*** End of sample license deactivation ***/
+
+     ?>
+     <p>Please enter the license key for this product to activate it. You were given a license key when you purchased this item.</p>
+     <form action="" method="post">
+         <table class="form-table">
+             <tr>
+                 <th style="width:100px;"><label for="vimposts_license_key">License Key</label></th>
+                 <td ><input class="regular-text" type="text" id="vimposts_license_key" name="vimposts_license_key"  value="<?php echo get_option('vimposts_license_key'); ?>" ></td>
+             </tr>
+         </table>
+         <p class="submit">
+             <input type="submit" name="activate_license" value="Activate" class="button-primary" />
+             <input type="submit" name="deactivate_license" value="Deactivate" class="button" />
+         </p>
+     </form>
+     <?php
+
+     echo '</div>';
+ }
+
 function create_vimpost_taxonomies() {
 	// Add new taxonomy, make it hierarchical (like categories)
 	$labels = array(
@@ -38,7 +172,7 @@ function create_vimpost_taxonomies() {
 
 	register_taxonomy( 'groups', array( 'vimpost' ), $args );
 }
- 
+
  function create_vimpost_posttype() {
 // set up labels
 	$labels = array(
@@ -52,7 +186,7 @@ function create_vimpost_taxonomies() {
     	'view_item' => 'View VimPost',
     	'search_items' => 'Search VimPosts',
     	'not_found' =>  'No VimPosts Found',
-    	'not_found_in_trash' => 'No VimPosts found in Trash', 
+    	'not_found_in_trash' => 'No VimPosts found in Trash',
     	'parent_item_colon' => '',
     	'menu_name' => 'VimPosts',
     	);
@@ -64,7 +198,7 @@ function create_vimpost_taxonomies() {
 	'publicly_queryable' => true,
 	'query_var' => true,
 	'supports' => array( 'title', 'editor', 'page-attributes'),
-	'taxonomies' => array( 'post_tag', 'groups' ),	
+	'taxonomies' => array( 'post_tag', 'groups' ),
 	'exclude_from_search' => false,
 	'capability_type' => 'post',
 	'rewrite' => array( 'slug' => '%groups%' ),
@@ -111,7 +245,7 @@ function vimposts_meta_box( $object, $box ) { ?>
 /* Save the meta box's post metadata. */
 function vimposts_save_post_class_meta( $post_id ) {
   global $post;
-  
+
   /* Verify the nonce before proceeding. */
   if ( !isset( $_POST['vimposts_nonce'] ) || !wp_verify_nonce( $_POST['vimposts_nonce'], basename( __FILE__ ) ) )
     return $post_id;
@@ -225,7 +359,7 @@ function vimpost_list_func ( $atts ){
 					$duration .= ltrim($duration_s, '0') . "s";
 				}
 				$output .= $duration . '</div>';
-				$posttags = get_the_tags();
+				$post = get_the_tags();
 				if ($posttags) {
 					$output .= '<div class="video-tags font-light font-08em inline-block pl15">';
 					$count = 0;
@@ -234,7 +368,7 @@ function vimpost_list_func ( $atts ){
 						if (!($count == 1)) {
 							$output .= " • ";
 						}
-						$output .= '<a href="">' . $tag->name . '</a>'; 
+						$output .= '<a href="">' . $tag->name . '</a>';
 					}
 					$output .= '</div>';
 				}
@@ -245,7 +379,7 @@ function vimpost_list_func ( $atts ){
 			$output .= '</div>';
 		}
 	endwhile;
- 
+
 	return $output;
 }
 
@@ -255,13 +389,13 @@ function vimposts_assets() {
 	$watched = get_user_meta(get_current_user_id(), "video_watched_" . $post->ID, true);
 	wp_enqueue_script( 'vimeo-player', plugins_url('/js/player.js', __FILE__), array( 'jquery' ) );
 	wp_enqueue_script( 'ajax-user-field', plugins_url('/js/ajax-user-field.js', __FILE__), array( 'jquery' ) );
-	
+
 	wp_localize_script( 'ajax-user-field', 'ajaxuserfield', array(
 		'ajaxurl' => admin_url( 'admin-ajax.php' ),
 		'postID' => $post->ID,
 		'watched' => $watched
 	));
-	
+
 }
 
 function update_user_field(){
@@ -282,21 +416,22 @@ function vimposts_custom_links($post_link, $post){
         	return str_replace( '%groups%' , "videos" , $post_link );
         }
     }
-    return $post_link; 
+    return $post_link;
 }
 
-add_action( 'wp_enqueue_scripts', 'vimposts_assets' );
+if(get_option('vimposts_license_key') != ''){
+    add_action( 'wp_enqueue_scripts', 'vimposts_assets' );
 
-add_filter( 'single_template', 'get_custom_post_type_template' );
-add_action( 'init', 'create_vimpost_posttype' );
-add_action( 'init', 'create_vimpost_taxonomies', 0 );
-add_action( 'load-post.php', 'vimposts_meta_boxes_setup' );
-add_action( 'load-post-new.php', 'vimposts_meta_boxes_setup' );
-add_action('save_post', 'vimposts_save_post_class_meta');
+    add_filter( 'single_template', 'get_custom_post_type_template' );
+    add_action( 'init', 'create_vimpost_posttype' );
+    add_action( 'init', 'create_vimpost_taxonomies', 0 );
+    add_action( 'load-post.php', 'vimposts_meta_boxes_setup' );
+    add_action( 'load-post-new.php', 'vimposts_meta_boxes_setup' );
+    add_action('save_post', 'vimposts_save_post_class_meta');
 
-add_action( 'wp_ajax_update_user_field', 'update_user_field' );
-add_filter( 'post_type_link', 'vimposts_custom_links', 1, 3 );
-add_shortcode( 'vimpost', 'vimpost_main_shortcode_func' );
-add_shortcode( 'vimpost_list', 'vimpost_list_func' );
-
+    add_action( 'wp_ajax_update_user_field', 'update_user_field' );
+    add_filter( 'post_type_link', 'vimposts_custom_links', 1, 3 );
+    add_shortcode( 'vimpost', 'vimpost_main_shortcode_func' );
+    add_shortcode( 'vimpost_list', 'vimpost_list_func' );
+}
 ?>
